@@ -2,8 +2,8 @@ package gophers
 
 import (
   "net/http"
-  "io/ioutil"
-  "fmt"
+//"io/ioutil"
+//"fmt"
   "encoding/json"
 )
 
@@ -20,12 +20,9 @@ func NewChuckNorrisGopher() ChuckNorrisGopher {
 
 type ChuckNorrisAPIResponse struct {
   Response string
-  Value api_data
-}
-
-type api_data struct {
-  Id int
-  Joke string
+  Value struct {
+    Id int
+    Joke string }
 }
 
 func (g ChuckNorrisGopher) TransformMessage(msg string) string {
@@ -35,16 +32,18 @@ func (g ChuckNorrisGopher) TransformMessage(msg string) string {
   }
 
   // Need to take the body of the response and turn into a byte array
-  body, err := ioutil.ReadAll(response.Body)
-  if err != nil {
-    panic(err.Error())
-  }
+//body, err := ioutil.ReadAll(response.Body)
+//if err != nil {
+//  panic(err.Error())
+//}
 
+//var api_struct = new(ChuckNorrisAPIResponse)
+//err = json.Unmarshal(body, &api_struct)
+//if err != nil {
+//  fmt.Println("Unmarshalling did not go well...: ", err)
+//}
   var api_struct = new(ChuckNorrisAPIResponse)
-  err = json.Unmarshal(body, &api_struct)
-  if err != nil {
-    fmt.Println("Unmarshalling did not go well...: ", err)
-  }
+  err = json.NewDecoder(response.Body).Decode(&api_struct)
   return string(api_struct.Value.Joke)
 	// Helpful links:
 	// * https://golang.org/pkg/net/http/#example_Get
