@@ -3,10 +3,8 @@ package gophers
 import (
   "net/http"
   "io/ioutil"
+  "time"
   "fmt"
-  "net/url"
-//"reflect"
-  "encoding/json"
 )
 
 // YodaGopher replies with Yoda transformation of text quotes instead of relaying the original message.
@@ -16,41 +14,41 @@ type YodaGopher struct {
 
 func NewYodaGopher() YodaGopher {
 	return YodaGopher{
-         //http://funtranslations.com/api  Seems limited to 5 calls per hour
-         endpoint: "http://api.funtranslations.com/translate/yoda.json",
+         endpoint: "https://yoda.p.mashape.com/yoda",
 	}
 }
 
-type YodaAPIResponse struct {
-  Success string
-  Contents yoda_api_data
-}
-
-type yoda_api_data struct {
-  Translation string
-  Text string
-  Translated string
+func ReadMashapeKey() string {
+  key, err := ioutil.ReadFile("MashapeKey")
+  if err != nil {
+    fmt.Println("No MashapeKey file present.")
+  }
+  return string(key)
 }
 
 func (g YodaGopher) TransformMessage(msg string) string {
-  data := url.Values{ "text": { msg} }
-  response, err := http.PostForm(g.endpoint, data)
+  client := &http.Client{Timeout: 40* time.Second}
+  request, _ := http.NewRequest("GET", g.endpoint, nil)
+
+  request.Header.Add("X-Mashape-Key", "1MkT3DPx72mshEFqgxB06DTVo36ap1WZjvxjsnpxluxXdP5Kf5")
+  request.Header.Add("Accept", "text/plain")
+
+  query := request.URL.Query()
+  query.Add("sentence", msg)
+
+  request.URL.RawQuery = query.Encode()
+
+  response, err := client.Do(request)
 
   if err != nil {
-    panic(err.Error())
+    fmt.Println("errored request:", err.Error())
   }
 
-  // Need to take the body of the response and turn into a byte array to Unmarshal
+  // Need to take the body of the response.  It is not json, just plain text.
   body, err := ioutil.ReadAll(response.Body)
   if err != nil {
     panic(err.Error())
   }
 
-  var api_struct = new(YodaAPIResponse)
-  err = json.Unmarshal(body, &api_struct)
-  if err != nil {
-    fmt.Println("Unmarshalling did not go well...: ", err)
-  }
-
-  return string(api_struct.Contents.Translated)
+  return string(body)
 }
